@@ -3,13 +3,13 @@ package repository
 import (
 	"context"
 
-	userpb "github.com/NikolosHGW/auth/pkg/user/v1"
+	"github.com/NikolosHGW/auth/internal/infrastructure/db/repository/user/model"
 )
 
 // UserRepository - контракт для репо юзера.
 type UserRepository interface {
-	Create(context.Context, *userpb.CreateRequest) (int64, error)
-	GetByID(context.Context, int64) (*userpb.GetResponse, error)
-	UpdateByID(context.Context, *userpb.UpdateRequest) error
+	Create(context.Context, *model.User) (int64, error)
+	GetByID(context.Context, int64) (*model.User, error)
+	Update(context.Context, *model.User) error
 	DeleteByID(context.Context, int64) error
 }

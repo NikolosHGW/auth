@@ -6,10 +6,12 @@ import (
 	"log"
 	"net"
 
+	"github.com/NikolosHGW/auth/internal/converter"
 	"github.com/NikolosHGW/auth/internal/infrastructure/config"
 	"github.com/NikolosHGW/auth/internal/infrastructure/config/env"
-	"github.com/NikolosHGW/auth/internal/infrastructure/db/repository"
-	"github.com/NikolosHGW/auth/internal/infrastructure/db/repository/user"
+	userRepo "github.com/NikolosHGW/auth/internal/infrastructure/db/repository/user"
+	"github.com/NikolosHGW/auth/internal/service"
+	userService "github.com/NikolosHGW/auth/internal/service/user"
 	userpb "github.com/NikolosHGW/auth/pkg/user/v1"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
@@ -19,7 +21,7 @@ import (
 
 type userServer struct {
 	userpb.UserV1Server
-	userRepo repository.UserRepository
+	userService service.UserService
 }
 
 func main() {
@@ -49,7 +51,11 @@ func main() {
 	}
 	s := grpc.NewServer()
 	reflection.Register(s)
-	userpb.RegisterUserV1Server(s, &userServer{userRepo: user.NewUser(pgxCon)})
+
+	userRepo := userRepo.NewUser(pgxCon)
+	userService := userService.NewService(userRepo)
+
+	userpb.RegisterUserV1Server(s, &userServer{userService: userService})
 
 	fmt.Println("Сервер gRPC начал работу")
 	if err := s.Serve(listen); err != nil {
@@ -58,7 +64,7 @@ func main() {
 }
 
 func (s *userServer) Create(ctx context.Context, req *userpb.CreateRequest) (*userpb.CreateResponse, error) {
-	id, err := s.userRepo.Create(ctx, req)
+	id, err := s.userService.Create(ctx, converter.APICreateUserToServiceUser(req))
 	if err != nil {
 		return nil, fmt.Errorf("ошибка создании: %w", err)
 	}
@@ -70,17 +76,17 @@ func (s *userServer) Create(ctx context.Context, req *userpb.CreateRequest) (*us
 }
 
 func (s *userServer) Get(ctx context.Context, req *userpb.GetRequest) (*userpb.GetResponse, error) {
-	response, err := s.userRepo.GetByID(ctx, req.Id)
+	serviceUser, err := s.userService.Get(ctx, req.Id)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка получения: %w", err)
 	}
 	fmt.Println("успешно: ", req.Id)
 
-	return response, nil
+	return converter.ServiceUserToAPIGetUser(serviceUser), nil
 }
 
 func (s *userServer) Update(ctx context.Context, req *userpb.UpdateRequest) (*emptypb.Empty, error) {
-	err := s.userRepo.UpdateByID(ctx, req)
+	err := s.userService.Update(ctx, converter.APIUpdateUserToServiceUser(req))
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при обновлении: %w", err)
 	}
@@ -90,7 +96,7 @@ func (s *userServer) Update(ctx context.Context, req *userpb.UpdateRequest) (*em
 }
 
 func (s *userServer) Delete(ctx context.Context, req *userpb.DeleteRequest) (*emptypb.Empty, error) {
-	err := s.userRepo.DeleteByID(ctx, req.Id)
+	err := s.userService.Delete(ctx, req.Id)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при удалении: %w", err)
 	}

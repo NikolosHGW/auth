@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/NikolosHGW/auth/internal/infrastructure/db/repository/user/converter"
 	"github.com/NikolosHGW/auth/internal/infrastructure/db/repository/user/model"
-	userpb "github.com/NikolosHGW/auth/pkg/user/v1"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -19,7 +17,7 @@ func NewUser(pgxCon *pgxpool.Pool) *userRepo {
 	return &userRepo{pgxCon: pgxCon}
 }
 
-func (r *userRepo) Create(ctx context.Context, user *userpb.CreateRequest) (int64, error) {
+func (r *userRepo) Create(ctx context.Context, user *model.User) (int64, error) {
 	var id int64
 	query := `INSERT INTO users (name, password, email, role) VALUES ($1, $2, $3, $4) RETURNING id`
 	err := r.
@@ -41,7 +39,7 @@ func (r *userRepo) Create(ctx context.Context, user *userpb.CreateRequest) (int6
 	return id, nil
 }
 
-func (r *userRepo) GetByID(ctx context.Context, id int64) (*userpb.GetResponse, error) {
+func (r *userRepo) GetByID(ctx context.Context, id int64) (*model.User, error) {
 	var user model.User
 	query := `SELECT id, name, password, email, role, created_at, updated_at FROM users WHERE id = $1`
 	row := r.pgxCon.QueryRow(ctx, query, id)
@@ -59,16 +57,16 @@ func (r *userRepo) GetByID(ctx context.Context, id int64) (*userpb.GetResponse, 
 		return nil, fmt.Errorf("ошибка при поиске пользователя: %w", err)
 	}
 
-	return converter.ToGetResponseFromUserModel(&user), nil
+	return &user, nil
 }
 
-func (r *userRepo) UpdateByID(ctx context.Context, user *userpb.UpdateRequest) error {
+func (r *userRepo) Update(ctx context.Context, user *model.User) error {
 	query := `
 		UPDATE users
 		SET name = $1, email = $2
 		WHERE id = $3
 	`
-	_, err := r.pgxCon.Exec(ctx, query, user.Name, user.Email, user.Id)
+	_, err := r.pgxCon.Exec(ctx, query, user.Name, user.Email, user.ID)
 	if err != nil {
 		return fmt.Errorf("ошибка при обновлении пользователя: %w", err)
 	}
