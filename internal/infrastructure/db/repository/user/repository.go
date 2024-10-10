@@ -1,24 +1,26 @@
-package repository
+package user
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
-	"github.com/NikolosHGW/auth/internal/entity"
-	"github.com/jackc/pgx/v5"
+	"github.com/NikolosHGW/auth/internal/infrastructure/db/repository/user/converter"
+	"github.com/NikolosHGW/auth/internal/infrastructure/db/repository/user/model"
+	userpb "github.com/NikolosHGW/auth/pkg/user/v1"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type userRepo struct {
-	pgxCon *pgx.Conn
+	pgxCon *pgxpool.Pool
 }
 
 // NewUser - конструктор репозитория юзера.
-func NewUser(pgxCon *pgx.Conn) *userRepo {
+func NewUser(pgxCon *pgxpool.Pool) *userRepo {
 	return &userRepo{pgxCon: pgxCon}
 }
 
-func (r *userRepo) Create(ctx context.Context, user *entity.User) (*entity.User, error) {
+func (r *userRepo) Create(ctx context.Context, user *userpb.CreateRequest) (int64, error) {
+	var id int64
 	query := `INSERT INTO users (name, password, email, role) VALUES ($1, $2, $3, $4) RETURNING id`
 	err := r.
 		pgxCon.
@@ -30,21 +32,19 @@ func (r *userRepo) Create(ctx context.Context, user *entity.User) (*entity.User,
 			user.Email,
 			user.Role,
 		).
-		Scan(&user.ID)
+		Scan(&id)
 
 	if err != nil {
-		return nil, fmt.Errorf("ошибка при сохранении пользователя: %w", err)
+		return id, fmt.Errorf("ошибка при сохранении пользователя: %w", err)
 	}
 
-	return user, nil
+	return id, nil
 }
 
-func (r *userRepo) GetByID(ctx context.Context, id int64) (*entity.User, error) {
-	var user entity.User
+func (r *userRepo) GetByID(ctx context.Context, id int64) (*userpb.GetResponse, error) {
+	var user model.User
 	query := `SELECT id, name, password, email, role, created_at, updated_at FROM users WHERE id = $1`
 	row := r.pgxCon.QueryRow(ctx, query, id)
-
-	var updatedAt sql.NullTime
 
 	err := row.Scan(
 		&user.ID,
@@ -53,28 +53,22 @@ func (r *userRepo) GetByID(ctx context.Context, id int64) (*entity.User, error) 
 		&user.Email,
 		&user.Role,
 		&user.CreatedAt,
-		&updatedAt,
+		&user.UpdatedAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при поиске пользователя: %w", err)
 	}
 
-	if updatedAt.Valid {
-		user.UpdatedAt = &updatedAt.Time
-	} else {
-		user.UpdatedAt = nil
-	}
-
-	return &user, nil
+	return converter.ToGetResponseFromUserModel(&user), nil
 }
 
-func (r *userRepo) UpdateByID(ctx context.Context, user *entity.User) error {
+func (r *userRepo) UpdateByID(ctx context.Context, user *userpb.UpdateRequest) error {
 	query := `
 		UPDATE users
 		SET name = $1, email = $2
 		WHERE id = $3
 	`
-	_, err := r.pgxCon.Exec(ctx, query, user.Name, user.Email, user.ID)
+	_, err := r.pgxCon.Exec(ctx, query, user.Name, user.Email, user.Id)
 	if err != nil {
 		return fmt.Errorf("ошибка при обновлении пользователя: %w", err)
 	}
