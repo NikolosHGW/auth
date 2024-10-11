@@ -3,6 +3,7 @@ package converter
 import (
 	serviceUser "github.com/NikolosHGW/auth/internal/service/user/model"
 	userpb "github.com/NikolosHGW/auth/pkg/user/v1"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // APICreateUserToServiceUser конвертирует proto CreateRequest в модель сервиса юзера.
@@ -17,8 +18,18 @@ func APICreateUserToServiceUser(apiUser *userpb.CreateRequest) *serviceUser.User
 
 // ServiceUserToAPIGetUser конвертирует модель сервиса юзера в proto GetResponse.
 func ServiceUserToAPIGetUser(serviceUser *serviceUser.User) *userpb.GetResponse {
+	var updatedAt *timestamppb.Timestamp
+	if serviceUser.UpdatedAt.Valid {
+		updatedAt = timestamppb.New(serviceUser.UpdatedAt.Time)
+	}
+
 	return &userpb.GetResponse{
-		Id: serviceUser.ID,
+		Id:        serviceUser.ID,
+		Name:      serviceUser.Name,
+		Email:     serviceUser.Email,
+		Role:      userpb.Role(serviceUser.Role),
+		CreatedAt: timestamppb.New(serviceUser.CreatedAt),
+		UpdatedAt: updatedAt,
 	}
 }
 
