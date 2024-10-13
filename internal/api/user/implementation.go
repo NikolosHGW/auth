@@ -5,12 +5,12 @@ import (
 	userpb "github.com/NikolosHGW/auth/pkg/user/v1"
 )
 
-type implementation struct {
+type Implementation struct {
 	userpb.UserV1Server
 	userService service.UserService
 }
 
 // NewImplementation - конструктор gRPC сервера для user.
-func NewImplementation(userService service.UserService) *implementation {
-	return &implementation{userService: userService}
+func NewImplementation(userService service.UserService) *Implementation {
+	return &Implementation{userService: userService}
 }

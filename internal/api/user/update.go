@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-func (i *implementation) Update(ctx context.Context, req *userpb.UpdateRequest) (*emptypb.Empty, error) {
+func (i *Implementation) Update(ctx context.Context, req *userpb.UpdateRequest) (*emptypb.Empty, error) {
 	err := i.userService.Update(ctx, converter.APIUpdateUserToServiceUser(req))
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при обновлении: %w", err)

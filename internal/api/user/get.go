@@ -8,7 +8,7 @@ import (
 	userpb "github.com/NikolosHGW/auth/pkg/user/v1"
 )
 
-func (i *implementation) Get(ctx context.Context, req *userpb.GetRequest) (*userpb.GetResponse, error) {
+func (i *Implementation) Get(ctx context.Context, req *userpb.GetRequest) (*userpb.GetResponse, error) {
 	serviceUser, err := i.userService.Get(ctx, req.Id)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка получения: %w", err)

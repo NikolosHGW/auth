@@ -8,7 +8,7 @@ import (
 	userpb "github.com/NikolosHGW/auth/pkg/user/v1"
 )
 
-func (i *implementation) Create(ctx context.Context, req *userpb.CreateRequest) (*userpb.CreateResponse, error) {
+func (i *Implementation) Create(ctx context.Context, req *userpb.CreateRequest) (*userpb.CreateResponse, error) {
 	id, err := i.userService.Create(ctx, converter.APICreateUserToServiceUser(req))
 	if err != nil {
 		return nil, fmt.Errorf("ошибка создании: %w", err)
