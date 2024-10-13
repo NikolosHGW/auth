@@ -8,6 +8,7 @@ import (
 	userpb "github.com/NikolosHGW/auth/pkg/user/v1"
 )
 
+// Create создаёт пользователя.
 func (i *Implementation) Create(ctx context.Context, req *userpb.CreateRequest) (*userpb.CreateResponse, error) {
 	id, err := i.userService.Create(ctx, converter.APICreateUserToServiceUser(req))
 	if err != nil {

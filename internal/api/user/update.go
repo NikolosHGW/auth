@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+// Update обновляет данные пользователя.
 func (i *Implementation) Update(ctx context.Context, req *userpb.UpdateRequest) (*emptypb.Empty, error) {
 	err := i.userService.Update(ctx, converter.APIUpdateUserToServiceUser(req))
 	if err != nil {

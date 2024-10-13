@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+// Delete удаляет пользователя.
 func (i *Implementation) Delete(ctx context.Context, req *userpb.DeleteRequest) (*emptypb.Empty, error) {
 	err := i.userService.Delete(ctx, req.Id)
 	if err != nil {

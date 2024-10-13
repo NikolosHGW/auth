@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
+// App - структура приложения.
 type App struct {
 	serviceProvider *serviceProvider
 	grpcServer      *grpc.Server

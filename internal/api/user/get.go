@@ -8,6 +8,7 @@ import (
 	userpb "github.com/NikolosHGW/auth/pkg/user/v1"
 )
 
+// Get ищет пользователя в бд.
 func (i *Implementation) Get(ctx context.Context, req *userpb.GetRequest) (*userpb.GetResponse, error) {
 	serviceUser, err := i.userService.Get(ctx, req.Id)
 	if err != nil {

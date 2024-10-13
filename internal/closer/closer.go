@@ -28,6 +28,7 @@ func CloseAll() {
 	globalCloser.CloseAll()
 }
 
+// Closer - структура.
 type Closer struct {
 	mu    sync.Mutex
 	once  sync.Once
