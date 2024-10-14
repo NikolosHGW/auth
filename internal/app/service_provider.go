@@ -2,23 +2,25 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	apiUser "github.com/NikolosHGW/auth/internal/api/user"
+	"github.com/NikolosHGW/auth/internal/client/db"
+	"github.com/NikolosHGW/auth/internal/client/db/pg"
 	"github.com/NikolosHGW/auth/internal/closer"
 	"github.com/NikolosHGW/auth/internal/infrastructure/config"
 	"github.com/NikolosHGW/auth/internal/infrastructure/db/repository"
 	repositoryUser "github.com/NikolosHGW/auth/internal/infrastructure/db/repository/user"
 	"github.com/NikolosHGW/auth/internal/service"
 	serviceUser "github.com/NikolosHGW/auth/internal/service/user"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type serviceProvider struct {
 	pgConfig   config.PGConfiger
 	grpcConfig config.GRPCConfiger
 
-	pgxPool *pgxpool.Pool
+	dbClient db.Client
 
 	userRepo repository.UserRepository
 
@@ -59,37 +61,40 @@ func (s *serviceProvider) GRPCConfig() config.GRPCConfiger {
 	return s.grpcConfig
 }
 
-// PGXPool - синглтон для pgx пула.
-func (s *serviceProvider) PGXPool(ctx context.Context) *pgxpool.Pool {
-	if s.pgxPool == nil {
-		pgxPool, err := pgxpool.New(ctx, s.PGConfig().GetDatabaseDSN())
+// DBClient - синглтон для pgx пула.
+func (s *serviceProvider) DBClient(ctx context.Context) db.Client {
+	if s.dbClient == nil {
+		dbClient, err := pg.New(ctx, s.PGConfig().GetDatabaseDSN())
 		if err != nil {
-			log.Fatalf("ошибка при инициализации pgx pool: %s", err.Error())
+			log.Fatalf("ошибка при инициализации клиента бд: %s", err.Error())
 		}
 
-		err = pgxPool.Ping(ctx)
+		err = dbClient.DB().Ping(ctx)
 		if err != nil {
 			log.Fatalf("ошибка во время пинга к бд: %s", err.Error())
 		}
 
 		closer.Add(
 			func() error {
-				pgxPool.Close()
+				err := dbClient.Close()
+				if err != nil {
+					return fmt.Errorf("ошибка при закрытии БД клиента: %w", err)
+				}
 
 				return nil
 			},
 		)
 
-		s.pgxPool = pgxPool
+		s.dbClient = dbClient
 	}
 
-	return s.pgxPool
+	return s.dbClient
 }
 
 // UserRepository - синглтон для репозитория юзера.
 func (s *serviceProvider) UserRepository(ctx context.Context) repository.UserRepository {
 	if s.userRepo == nil {
-		s.userRepo = repositoryUser.NewUser(s.PGXPool(ctx))
+		s.userRepo = repositoryUser.NewUser(s.DBClient(ctx))
 	}
 
 	return s.userRepo

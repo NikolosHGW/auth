@@ -69,6 +69,6 @@ func (p *pg) Close() {
 	p.dbc.Close()
 }
 
-func logQuery(ctx context.Context, q db.Query, args ...any) {
-	log.Println(ctx, fmt.Sprintf("sql: %s", q.Name), fmt.Sprintf("query: %s", q.QueryRaw), args, ". sql end.")
+func logQuery(_ context.Context, q db.Query, args ...any) {
+	log.Println(fmt.Sprintf("sql: %s", q.Name), fmt.Sprintf("query: %s", q.QueryRaw), args, "- sql end.")
 }
