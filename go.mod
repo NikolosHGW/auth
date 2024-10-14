@@ -4,6 +4,7 @@ go 1.23.0
 
 require (
 	github.com/caarlos0/env v3.5.0+incompatible
+	github.com/georgysavva/scany/v2 v2.1.3
 	github.com/golang/protobuf v1.5.4
 	github.com/joho/godotenv v1.5.1
 	google.golang.org/grpc v1.65.0
