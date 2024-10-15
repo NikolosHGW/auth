@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+// Handler - тип функции, которой нужно обернуть код для транзакции.
 type Handler func(ctx context.Context) error
 
 // Client - клиента для работы с БД.
@@ -58,6 +59,7 @@ type Transactor interface {
 	BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error)
 }
 
+// TxManager - интерфейс для использования транзакции с уровнем изоляции read committed.
 type TxManager interface {
 	ReadCommitted(ctx context.Context, f Handler) error
 }

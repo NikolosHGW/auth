@@ -15,17 +15,17 @@ func (s *service) Create(ctx context.Context, user *serviceUser.User) (int64, er
 	err := s.txManager.ReadCommitted(
 		ctx,
 		func(ctx context.Context) error {
-			txId, err := s.r.Create(ctx, repoUser)
+			txID, err := s.r.Create(ctx, repoUser)
 			if err != nil {
 				return fmt.Errorf("ошибка при создании с транзакцией: %w", err)
 			}
 
-			txUser, err := s.r.GetByID(ctx, txId)
+			txUser, err := s.r.GetByID(ctx, txID)
 			if err != nil {
 				return fmt.Errorf("ошибка при получении с транзакцией: %w", err)
 			}
 			fmt.Println("получен пользователь в транзакции: ", txUser)
-			id = txId
+			id = txID
 
 			return nil
 		},

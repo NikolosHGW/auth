@@ -15,6 +15,7 @@ import (
 type key string
 
 const (
+	// TxKey ключ для вытаскивания объекта tx из контекста.
 	TxKey key = "tx"
 )
 
@@ -98,6 +99,7 @@ func logQuery(_ context.Context, q db.Query, args ...any) {
 	log.Println(fmt.Sprintf("sql: %s", q.Name), fmt.Sprintf("query: %s", q.QueryRaw), args, "- sql end.")
 }
 
+// MakeContextTx устанавливает объект tx в контекст.
 func MakeContextTx(ctx context.Context, tx pgx.Tx) context.Context {
 	return context.WithValue(ctx, TxKey, tx)
 }
