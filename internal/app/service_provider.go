@@ -8,6 +8,7 @@ import (
 	apiUser "github.com/NikolosHGW/auth/internal/api/user"
 	"github.com/NikolosHGW/auth/internal/client/db"
 	"github.com/NikolosHGW/auth/internal/client/db/pg"
+	"github.com/NikolosHGW/auth/internal/client/db/transaction"
 	"github.com/NikolosHGW/auth/internal/closer"
 	"github.com/NikolosHGW/auth/internal/infrastructure/config"
 	"github.com/NikolosHGW/auth/internal/infrastructure/db/repository"
@@ -20,7 +21,8 @@ type serviceProvider struct {
 	pgConfig   config.PGConfiger
 	grpcConfig config.GRPCConfiger
 
-	dbClient db.Client
+	dbClient  db.Client
+	txManager db.TxManager
 
 	userRepo repository.UserRepository
 
@@ -91,6 +93,14 @@ func (s *serviceProvider) DBClient(ctx context.Context) db.Client {
 	return s.dbClient
 }
 
+func (s *serviceProvider) TXManager(ctx context.Context) db.TxManager {
+	if s.txManager == nil {
+		s.txManager = transaction.NewTransactionManager(s.DBClient(ctx).DB())
+	}
+
+	return s.txManager
+}
+
 // UserRepository - синглтон для репозитория юзера.
 func (s *serviceProvider) UserRepository(ctx context.Context) repository.UserRepository {
 	if s.userRepo == nil {
@@ -103,7 +113,7 @@ func (s *serviceProvider) UserRepository(ctx context.Context) repository.UserRep
 // UserService - синглтон для сервиса юзера.
 func (s *serviceProvider) UserService(ctx context.Context) service.UserService {
 	if s.userService == nil {
-		s.userService = serviceUser.NewService(s.UserRepository(ctx))
+		s.userService = serviceUser.NewService(s.UserRepository(ctx), s.TXManager(ctx))
 	}
 
 	return s.userService

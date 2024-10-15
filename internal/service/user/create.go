@@ -10,7 +10,27 @@ import (
 
 func (s *service) Create(ctx context.Context, user *serviceUser.User) (int64, error) {
 	repoUser := converter.UserServiceToUserRepo(user)
-	id, err := s.r.Create(ctx, repoUser)
+
+	var id int64
+	err := s.txManager.ReadCommitted(
+		ctx,
+		func(ctx context.Context) error {
+			txId, err := s.r.Create(ctx, repoUser)
+			if err != nil {
+				return fmt.Errorf("ошибка при создании с транзакцией: %w", err)
+			}
+
+			txUser, err := s.r.GetByID(ctx, txId)
+			if err != nil {
+				return fmt.Errorf("ошибка при получении с транзакцией: %w", err)
+			}
+			fmt.Println("получен пользователь в транзакции: ", txUser)
+			id = txId
+
+			return nil
+		},
+	)
+
 	if err != nil {
 		return id, fmt.Errorf("ошибка создании: %w", err)
 	}
