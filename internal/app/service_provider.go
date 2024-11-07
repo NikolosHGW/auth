@@ -6,15 +6,15 @@ import (
 	"log"
 
 	apiUser "github.com/NikolosHGW/auth/internal/api/user"
-	"github.com/NikolosHGW/auth/internal/client/db"
-	"github.com/NikolosHGW/auth/internal/client/db/pg"
-	"github.com/NikolosHGW/auth/internal/client/db/transaction"
-	"github.com/NikolosHGW/auth/internal/closer"
 	"github.com/NikolosHGW/auth/internal/infrastructure/config"
 	"github.com/NikolosHGW/auth/internal/infrastructure/db/repository"
 	repositoryUser "github.com/NikolosHGW/auth/internal/infrastructure/db/repository/user"
 	"github.com/NikolosHGW/auth/internal/service"
 	serviceUser "github.com/NikolosHGW/auth/internal/service/user"
+	"github.com/NikolosHGW/platform-common/pkg/closer"
+	"github.com/NikolosHGW/platform-common/pkg/db"
+	"github.com/NikolosHGW/platform-common/pkg/db/pg"
+	"github.com/NikolosHGW/platform-common/pkg/db/transaction"
 )
 
 type serviceProvider struct {
@@ -63,7 +63,7 @@ func (s *serviceProvider) GRPCConfig() config.GRPCConfiger {
 	return s.grpcConfig
 }
 
-// DBClient - синглтон для pgx пула.
+// DBClient - синглтон для бд.
 func (s *serviceProvider) DBClient(ctx context.Context) db.Client {
 	if s.dbClient == nil {
 		dbClient, err := pg.New(ctx, s.PGConfig().GetDatabaseDSN())
@@ -71,7 +71,7 @@ func (s *serviceProvider) DBClient(ctx context.Context) db.Client {
 			log.Fatalf("ошибка при инициализации клиента бд: %s", err.Error())
 		}
 
-		err = dbClient.DB().Ping(ctx)
+		err = dbClient.DB().PingContext(ctx)
 		if err != nil {
 			log.Fatalf("ошибка во время пинга к бд: %s", err.Error())
 		}
