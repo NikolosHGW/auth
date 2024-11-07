@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/NikolosHGW/auth/internal/client/db"
 	"github.com/NikolosHGW/auth/internal/infrastructure/db/repository/user/model"
+	"github.com/NikolosHGW/platform-common/pkg/db"
 )
 
 const repositoryName = "user_repository"
@@ -27,7 +27,7 @@ func (r *userRepo) Create(ctx context.Context, user *model.User) (int64, error) 
 	}
 	err := r.
 		db.DB().
-		QueryRowContext(
+		QueryRowxContext(
 			ctx,
 			q,
 			user.Name,
@@ -50,7 +50,7 @@ func (r *userRepo) GetByID(ctx context.Context, id int64) (*model.User, error) {
 		Name:     repositoryName + ".GetByID",
 		QueryRaw: `SELECT id, name, password, email, role, created_at, updated_at FROM users WHERE id = $1`,
 	}
-	err := r.db.DB().ScanOneContext(ctx, &user, q, id)
+	err := r.db.DB().GetContext(ctx, &user, q, id)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при поиске пользователя: %w", err)
 	}

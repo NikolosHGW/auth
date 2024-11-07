@@ -1,8 +1,8 @@
 package user
 
 import (
-	"github.com/NikolosHGW/auth/internal/client/db"
 	"github.com/NikolosHGW/auth/internal/infrastructure/db/repository"
+	"github.com/NikolosHGW/platform-common/pkg/db"
 )
 
 type service struct {
