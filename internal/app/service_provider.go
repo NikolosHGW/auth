@@ -20,6 +20,7 @@ import (
 type serviceProvider struct {
 	pgConfig   config.PGConfiger
 	grpcConfig config.GRPCConfiger
+	httpConfig config.HTTPConfiger
 
 	dbClient  db.Client
 	txManager db.TxManager
@@ -61,6 +62,20 @@ func (s *serviceProvider) GRPCConfig() config.GRPCConfiger {
 	}
 
 	return s.grpcConfig
+}
+
+// HTTPConfig - синглтон для http-сервер конфига.
+func (s *serviceProvider) HTTPConfig() config.HTTPConfiger {
+	if s.httpConfig == nil {
+		httpConfig, err := config.NewHTTP()
+		if err != nil {
+			log.Fatalf("ошибка при инициализации объекта httpConfig: %s", err.Error())
+		}
+
+		s.httpConfig = httpConfig
+	}
+
+	return s.httpConfig
 }
 
 // DBClient - синглтон для бд.

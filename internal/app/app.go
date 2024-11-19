@@ -5,10 +5,14 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
+	"sync"
+	"time"
 
 	"github.com/NikolosHGW/auth/internal/infrastructure/config"
 	userpb "github.com/NikolosHGW/auth/pkg/user/v1"
 	"github.com/NikolosHGW/platform-common/pkg/closer"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -18,6 +22,7 @@ import (
 type App struct {
 	serviceProvider *serviceProvider
 	grpcServer      *grpc.Server
+	httpServer      *http.Server
 }
 
 // NewApp - конструктор Приложения App, где происходит вся инициализация приложения.
@@ -40,9 +45,28 @@ func (a *App) Run() error {
 		log.Println("Приложение завершено корректно.")
 	}()
 
-	if err := a.runGRPCServer(); err != nil {
-		return fmt.Errorf("ошибка запуска gPRC сервера: %w", err)
-	}
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+
+		err := a.runGRPCServer()
+		if err != nil {
+			log.Fatalf("ошибка запуска gPRC сервера: %v", err)
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+
+		err := a.runHTTPServer()
+		if err != nil {
+			log.Fatalf("ошибка запуска HTTP-сервера: %v", err)
+		}
+	}()
+
+	wg.Wait()
 
 	return nil
 }
@@ -52,6 +76,7 @@ func (a *App) initDeps(ctx context.Context) error {
 		a.initConfig,
 		a.initServiceProvider,
 		a.initGRPCServer,
+		a.initHTTPServer,
 	}
 
 	for _, f := range inits {
@@ -89,6 +114,26 @@ func (a *App) initGRPCServer(ctx context.Context) error {
 	return nil
 }
 
+func (a *App) initHTTPServer(ctx context.Context) error {
+	mux := runtime.NewServeMux()
+
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	}
+
+	err := userpb.RegisterUserV1HandlerFromEndpoint(ctx, mux, a.serviceProvider.GRPCConfig().GetRunAddress(), opts)
+	if err != nil {
+		return fmt.Errorf("ошибка при инициализации HTTP-сервера: %w", err)
+	}
+
+	a.httpServer = &http.Server{
+		Addr:    a.serviceProvider.HTTPConfig().HTTPRunAddress(),
+		Handler: mux,
+	}
+
+	return nil
+}
+
 func (a *App) runGRPCServer() error {
 	listen, err := net.Listen("tcp", a.serviceProvider.GRPCConfig().GetRunAddress())
 	if err != nil {
@@ -99,7 +144,7 @@ func (a *App) runGRPCServer() error {
 		func() error {
 			log.Printf(
 				"Получен сигнал завершения, отключаем сервер по адресу %s ...",
-				a.serviceProvider.grpcConfig.GetRunAddress(),
+				a.serviceProvider.GRPCConfig().GetRunAddress(),
 			)
 			a.grpcServer.GracefulStop()
 
@@ -107,10 +152,35 @@ func (a *App) runGRPCServer() error {
 		},
 	)
 
-	log.Printf("Запуск GRPC сервера на адресе %s", a.serviceProvider.GRPCConfig().GetRunAddress())
+	log.Printf("Запуск GRPC сервера на адресе %s ...", a.serviceProvider.GRPCConfig().GetRunAddress())
 
 	if err := a.grpcServer.Serve(listen); err != nil {
 		return fmt.Errorf("ошибка при запуске сервера: %w", err)
+	}
+
+	return nil
+}
+
+func (a *App) runHTTPServer() error {
+	closer.Add(
+		func() error {
+			log.Printf(
+				"Получен сигнал завершения, отключаем сервер по адресу %s ...",
+				a.serviceProvider.HTTPConfig().HTTPRunAddress(),
+			)
+
+			ctxShutDown, cancelShutDown := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancelShutDown()
+			a.httpServer.Shutdown(ctxShutDown)
+
+			return nil
+		},
+	)
+	log.Printf("Запуск HTTP-сервера на адресе %s ...", a.serviceProvider.HTTPConfig().HTTPRunAddress())
+
+	err := a.httpServer.ListenAndServe()
+	if err != nil && err != http.ErrServerClosed {
+		return fmt.Errorf("ошибка при запуске HTTP-сервера: %w", err)
 	}
 
 	return nil
