@@ -10,10 +10,12 @@ type validator interface {
 	Validate() error
 }
 
+// ValidateInterceptor проверяет наличие валидации protobuf,
+// если она есть, то запускается валидация.
 func ValidateInterceptor(
 	ctx context.Context,
 	req any,
-	info *grpc.UnaryServerInfo,
+	_ *grpc.UnaryServerInfo,
 	handler grpc.UnaryHandler,
 ) (any, error) {
 	if val, ok := req.(validator); ok {
