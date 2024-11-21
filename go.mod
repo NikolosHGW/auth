@@ -5,6 +5,7 @@ go 1.23.0
 require (
 	github.com/NikolosHGW/platform-common v0.0.0-20241107155759-c32fb5ee4060
 	github.com/caarlos0/env v3.5.0+incompatible
+	github.com/envoyproxy/protoc-gen-validate v1.1.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
 	google.golang.org/genproto/googleapis/api v0.0.0-20241021214115-324edc3d5d38
