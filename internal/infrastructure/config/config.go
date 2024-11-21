@@ -31,3 +31,8 @@ type GRPCConfiger interface {
 type PGConfiger interface {
 	GetDatabaseDSN() string
 }
+
+// HTTPConfiger - контракт для конфига http-сервера.
+type HTTPConfiger interface {
+	HTTPRunAddress() string
+}
