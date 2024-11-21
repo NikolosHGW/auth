@@ -127,8 +127,12 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 	}
 
 	a.httpServer = &http.Server{
-		Addr:    a.serviceProvider.HTTPConfig().HTTPRunAddress(),
-		Handler: mux,
+		Addr:              a.serviceProvider.HTTPConfig().HTTPRunAddress(),
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,   // Таймаут на чтение заголовков
+		ReadTimeout:       10 * time.Second,  // (опционально) Таймаут на чтение всего запроса
+		WriteTimeout:      10 * time.Second,  // (опционально) Таймаут на запись ответа
+		IdleTimeout:       120 * time.Second, // (опционально) Таймаут для неактивных соединений
 	}
 
 	return nil
@@ -171,9 +175,8 @@ func (a *App) runHTTPServer() error {
 
 			ctxShutDown, cancelShutDown := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancelShutDown()
-			a.httpServer.Shutdown(ctxShutDown)
 
-			return nil
+			return a.httpServer.Shutdown(ctxShutDown)
 		},
 	)
 	log.Printf("Запуск HTTP-сервера на адресе %s ...", a.serviceProvider.HTTPConfig().HTTPRunAddress())
